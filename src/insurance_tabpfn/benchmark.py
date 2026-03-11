@@ -272,11 +272,11 @@ class GLMBenchmark:
             ]
             formula_str = "_y ~ " + " + ".join(safe_features)
 
-        kwargs: dict = {"family": sm.families.Poisson(), "maxiter": self.max_iter}
+        kwargs: dict = {"family": sm.families.Poisson()}
         if offset_col and offset_col in df.columns:
             kwargs["offset"] = df[offset_col].values
 
-        result = smf.glm(formula=formula_str, data=df, **kwargs).fit(disp=False)
+        result = smf.glm(formula=formula_str, data=df, **kwargs).fit(disp=False, maxiter=self.max_iter)
         self._glm = result
         self._df_columns = list(df.columns)
         self._rename_map = rename

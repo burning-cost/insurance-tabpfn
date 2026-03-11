@@ -139,7 +139,13 @@ class RelativitiesExtractor:
 
             # No exposure at prediction time — we want rates, not counts
             # Multiply by mean background exposure for correct units
-            raw_preds = self.model.predict(X_temp)  # rates (model handles exposure internally)
+            # If model was fitted with exposure, pass unit exposure to get pure rates
+            _has_exp = getattr(self.model, "_has_exposure", False)
+            if _has_exp:
+                _unit_exp = np.ones(len(X_temp))
+                raw_preds = self.model.predict(X_temp, exposure=_unit_exp)
+            else:
+                raw_preds = self.model.predict(X_temp)
             mean_preds.append(float(np.mean(raw_preds)))
 
         mean_preds_arr = np.array(mean_preds)

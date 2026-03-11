@@ -37,7 +37,9 @@ def test_fit_predict_no_exposure(small_df, small_y):
 
 
 def test_fit_predict_numpy_arrays(small_df, small_y, small_exposure):
-    X_arr = small_df.values
+    # Use only numeric columns — numpy arrays cannot hold mixed types
+    X_numeric = small_df.select_dtypes(include=["number"])
+    X_arr = X_numeric.values.astype(float)
     model = InsuranceTabPFN(backend="mock", random_state=0)
     model.fit(X_arr, small_y, exposure=small_exposure)
     preds = model.predict(X_arr, exposure=small_exposure)
