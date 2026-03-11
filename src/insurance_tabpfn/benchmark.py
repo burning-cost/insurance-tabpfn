@@ -98,14 +98,17 @@ def _gini(y_actual: NDArray, y_predicted: NDArray, exposure: Optional[NDArray] =
     cum_claims = np.concatenate([[0.0], cum_claims])
 
     # Area under Lorenz curve via trapezoid rule
-    lorenz_area = float(np.trapz(cum_claims, cum_exposure))
+    _trapezoid = getattr(np, "trapezoid", np.trapz) if hasattr(np, "trapz") else np.trapezoid
+    lorenz_area = float(_trapezoid(cum_claims, cum_exposure))
     # Perfect model area = 0.5; gini = 2 * (lorenz_area - 0.5) ... wait
     # Standard: Gini = 2 * (AUC - 0.5) if AUC is ROC; for Lorenz it's different
     # For Lorenz: Gini = 1 - 2 * lorenz_area would give concentration, but
     # for predictive Gini we want: area between Lorenz and line of equality
     # Normalised Gini = (0.5 - lorenz_area) / 0.5 * 2 = (lorenz_area - 0.5) * 2
     # (if sorted by predicted, well-calibrated model => lorenz_area > 0.5)
-    return float(2.0 * lorenz_area - 1.0)
+    # Lorenz area < 0.5 for good model (low-risk policies first accumulate fewer claims)
+    # Normalised Gini = 1 - 2 * lorenz_area
+    return float(1.0 - 2.0 * lorenz_area)
 
 
 def _poisson_deviance(

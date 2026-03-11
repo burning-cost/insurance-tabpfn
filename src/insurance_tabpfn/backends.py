@@ -205,7 +205,7 @@ class MockBackend:
     Never use in production.
     """
 
-    def __init__(self, random_state: Optional[int] = 42) -> None:
+    def __init__(self, random_state: Optional[int] = 42, **kwargs) -> None:
         self._mean: Optional[float] = None
         self._std: Optional[float] = None
         self._rng = np.random.default_rng(random_state)

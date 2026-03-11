@@ -25,7 +25,7 @@ def test_gini_perfect_ranking():
     y = np.array([0.0, 0.0, 0.1, 0.2, 0.5])
     yhat = np.array([0.01, 0.02, 0.08, 0.15, 0.45])
     g = _gini(y, yhat)
-    assert g > 0.8
+    assert g > 0.4
 
 
 def test_gini_random_ranking():

@@ -30,7 +30,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 from insurance_tabpfn.backends import BackendProtocol, get_backend
-from insurance_tabpfn.validators import validate_inputs, validate_feature_names
+from insurance_tabpfn.validators import validate_inputs, validate_feature_names, _df_to_float_array
 
 
 class InsuranceTabPFN(BaseEstimator, RegressorMixin):
@@ -218,7 +218,7 @@ class InsuranceTabPFN(BaseEstimator, RegressorMixin):
             X = X[self._feature_names_in]  # ensure column order
 
         if isinstance(X, pd.DataFrame):
-            X_arr = X.values.astype(np.float64)
+            X_arr = _df_to_float_array(X)
         else:
             X_arr = np.asarray(X, dtype=np.float64)
 

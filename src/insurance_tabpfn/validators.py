@@ -41,6 +41,26 @@ THIN_SEGMENT_RECOMMENDED_MAX = 5_000
 THIN_SEGMENT_MINIMUM = 20
 
 
+def _df_to_float_array(X: pd.DataFrame) -> NDArray:
+    """
+    Convert a DataFrame to float64 array.
+
+    Object / category columns are substituted with 0.0 placeholder — they
+    will be label-encoded later in model._encode_categoricals(). Numeric
+    columns are converted normally so NaN/Inf checks work correctly.
+    """
+    n, p = X.shape
+    out = np.zeros((n, p), dtype=np.float64)
+    for i, col in enumerate(X.columns):
+        dtype = X.dtypes.iloc[i]
+        if dtype == object or str(dtype) == "category":
+            # placeholder — will be encoded in model layer
+            out[:, i] = 0.0
+        else:
+            out[:, i] = X.iloc[:, i].astype(np.float64).values
+    return out
+
+
 def validate_inputs(
     X: pd.DataFrame | NDArray,
     y: NDArray,
@@ -61,13 +81,13 @@ def validate_inputs(
 
     Returns
     -------
-    X_arr : NDArray, shape (n_samples, n_features). Float64.
+    X_arr : NDArray, shape (n_samples, n_features). Float64 (object cols = 0.0 placeholder).
     y_arr : NDArray, shape (n_samples,). Float64.
     exposure_arr : NDArray or None.
     """
-    # Convert X to array
+    # Convert X to float array, handling mixed types
     if isinstance(X, pd.DataFrame):
-        X_arr = X.values.astype(np.float64)
+        X_arr = _df_to_float_array(X)
     else:
         X_arr = np.asarray(X, dtype=np.float64)
 
@@ -88,16 +108,26 @@ def validate_inputs(
             f"X has {n_samples} rows but y has {len(y_arr)} elements."
         )
 
-    # NaN / Inf checks
-    if not np.all(np.isfinite(X_arr)):
-        n_bad = np.sum(~np.isfinite(X_arr))
+    # NaN / Inf checks on numeric columns only
+    # (object placeholder cols are 0.0, always finite)
+    if isinstance(X, pd.DataFrame):
+        numeric_mask = np.array([
+            X.dtypes.iloc[i] != object and str(X.dtypes.iloc[i]) != "category"
+            for i in range(X.shape[1])
+        ])
+        X_numeric = X_arr[:, numeric_mask]
+    else:
+        X_numeric = X_arr
+
+    if not np.all(np.isfinite(X_numeric)):
+        n_bad = int(np.sum(~np.isfinite(X_numeric)))
         raise ValidationError(
-            f"X contains {n_bad} non-finite values (NaN or Inf). "
+            f"X contains {n_bad} non-finite values (NaN or Inf) in numeric columns. "
             "TabPFN cannot handle missing values. Impute before fitting."
         )
 
     if not np.all(np.isfinite(y_arr)):
-        n_bad = np.sum(~np.isfinite(y_arr))
+        n_bad = int(np.sum(~np.isfinite(y_arr)))
         raise ValidationError(
             f"y contains {n_bad} non-finite values."
         )
@@ -119,14 +149,14 @@ def validate_inputs(
         if not np.all(np.isfinite(exposure_arr)):
             raise ValidationError("exposure contains non-finite values.")
         if np.any(exposure_arr <= 0):
-            n_bad = np.sum(exposure_arr <= 0)
+            n_bad = int(np.sum(exposure_arr <= 0))
             raise ValidationError(
                 f"exposure contains {n_bad} zero or negative values. "
                 "Exposure must be strictly positive (e.g. policy years in force)."
             )
         if np.any(exposure_arr > 1.5):
             warnings.warn(
-                f"exposure contains values > 1.5 ({np.sum(exposure_arr > 1.5)} rows). "
+                f"exposure contains values > 1.5 ({int(np.sum(exposure_arr > 1.5))} rows). "
                 "If modelling annual claim frequency, exposure should be in policy-years "
                 "(typically 0 < e <= 1.0). Values > 1.5 suggest exposure is in days, "
                 "months, or premium units — normalise before fitting.",
