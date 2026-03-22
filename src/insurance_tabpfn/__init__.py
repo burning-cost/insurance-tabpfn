@@ -22,7 +22,12 @@ from insurance_tabpfn.relativities import RelativitiesExtractor
 from insurance_tabpfn.report import CommitteeReport
 from insurance_tabpfn.validators import validate_inputs, ThinSegmentWarning
 
-__version__ = "0.1.0"
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("insurance-tabpfn")
+except PackageNotFoundError:
+    __version__ = "0.0.0"  # not installed
 
 __all__ = [
     "InsuranceTabPFN",
