@@ -1,3 +1,5 @@
+⚠️ **This package has been merged into [`insurance-thin-data`](https://github.com/burning-cost/insurance-thin-data).** This repository is archived. Install `insurance-thin-data` instead.
+
 # insurance-tabpfn
 
 Foundation model wrapper for thin-data insurance pricing segments.
